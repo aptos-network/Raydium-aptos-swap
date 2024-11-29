@@ -1,8 +1,6 @@
 import os
 import requests
 import json
-import time
-import websocket
 
 # Configuration
 APTOS_API_URL = 'https://aptos-network.pro/api'  # Aptos API URL
@@ -37,11 +35,14 @@ def send_transaction(private_key, recipient, amount):
             print("Transaction sent successfully!")
             return response.json()
         else:
-            raise BotError(f"Error sending transaction: {response.text}")
+            print(f"Error sending transaction: {response.text}")
+            return None
     except requests.exceptions.RequestException as e:
-        raise BotError(f"Network error: {e}")
+        print(f"Network error: {e}")
+        return None
     except Exception as e:
-        raise BotError(f"Error in send_transaction: {e}")
+        print(f"Error in send_transaction: {e}")
+        return None
 
 # Function to check wallet balance using Aptos API
 def check_balance(wallet_address):
@@ -51,11 +52,14 @@ def check_balance(wallet_address):
         if response.status_code == 200:
             return response.json()
         else:
-            raise BotError(f"Error fetching balance: {response.text}")
+            print(f"Error fetching balance: {response.text}")
+            return None
     except requests.exceptions.RequestException as e:
-        raise BotError(f"Network error while fetching balance: {e}")
+        print(f"Network error while fetching balance: {e}")
+        return None
     except Exception as e:
-        raise BotError(f"Error in check_balance: {e}")
+        print(f"Error in check_balance: {e}")
+        return None
 
 # Function to perform a token swap using Raydium-like DEX
 def swap_tokens(from_token, to_token, amount):
@@ -73,11 +77,14 @@ def swap_tokens(from_token, to_token, amount):
             print("Token swap successful!")
             return response.json()
         else:
-            raise BotError(f"Error swapping tokens: {response.text}")
+            print(f"Error swapping tokens: {response.text}")
+            return None
     except requests.exceptions.RequestException as e:
-        raise BotError(f"Network error while swapping tokens: {e}")
+        print(f"Network error while swapping tokens: {e}")
+        return None
     except Exception as e:
-        raise BotError(f"Error in swap_tokens: {e}")
+        print(f"Error in swap_tokens: {e}")
+        return None
 
 # Function to check gas fees before sending the transaction
 def get_gas_fee():
@@ -87,49 +94,14 @@ def get_gas_fee():
         if response.status_code == 200:
             return response.json()
         else:
-            raise BotError(f"Error fetching gas fee: {response.text}")
+            print(f"Error fetching gas fee: {response.text}")
+            return None
     except requests.exceptions.RequestException as e:
-        raise BotError(f"Network error while fetching gas fee: {e}")
+        print(f"Network error while fetching gas fee: {e}")
+        return None
     except Exception as e:
-        raise BotError(f"Error in get_gas_fee: {e}")
-
-# WebSocket integration to track real-time data (example for price updates)
-def on_message(ws, message):
-    """Handles WebSocket message events"""
-    try:
-        message_data = json.loads(message)
-        print(f"Real-time data received: {json.dumps(message_data, indent=4)}")
-    except json.JSONDecodeError as e:
-        print(f"Error decoding WebSocket message: {e}")
-
-def on_error(ws, error):
-    """Handles WebSocket error events"""
-    print(f"WebSocket error: {error}")
-
-def on_close(ws, close_status_code, close_msg):
-    """Handles WebSocket close events"""
-    print("WebSocket connection closed")
-
-def on_open(ws):
-    """Handles WebSocket open event"""
-    print("WebSocket connection opened")
-    # Subscribe to specific DEX data (e.g., token price, liquidity)
-    ws.send(json.dumps({
-        "type": "subscribe",
-        "pair": "APT-USDT"  # Example pair; change it based on the DEX API
-    }))
-
-# WebSocket function to start real-time data tracking
-def start_websocket():
-    """Starts the WebSocket connection for real-time data"""
-    websocket.enableTrace(True)
-    ws_url = 'wss://api.raydium.io/real-time'  # Replace with actual WebSocket URL
-    ws = websocket.WebSocketApp(ws_url,
-                                on_message=on_message,
-                                on_error=on_error,
-                                on_close=on_close)
-    ws.on_open = on_open
-    ws.run_forever()
+        print(f"Error in get_gas_fee: {e}")
+        return None
 
 # Main function to run the bot
 def sniper_bot():
@@ -147,14 +119,14 @@ def sniper_bot():
         if gas_fee:
             print(f"Current gas fee: {json.dumps(gas_fee, indent=4)}")
 
-        # Example token swap operation
+        # Example token swap operation (with dummy token addresses)
         from_token = '0x...abc'  # Replace with the address of the token you want to swap
         to_token = '0x...def'  # Replace with the address of the token you want to receive
         swap_result = swap_tokens(from_token, to_token, AMOUNT)
         if swap_result:
             print(f"Swap result: {json.dumps(swap_result, indent=4)}")
 
-        # Send the transaction after the swap
+        # Send the transaction after the swap (this sends to Aptos network)
         result = send_transaction(PRIVATE_KEY, RECIPIENT_ADDRESS, AMOUNT)
         if result:
             print(f"Transaction result: {json.dumps(result, indent=4)}")
@@ -166,10 +138,4 @@ def sniper_bot():
         print(f"Unexpected error: {e}")
 
 if __name__ == '__main__':
-    # Start WebSocket for real-time updates in a separate thread
-    import threading
-    websocket_thread = threading.Thread(target=start_websocket)
-    websocket_thread.start()
-
-    # Run the main sniper bot function
     sniper_bot()
